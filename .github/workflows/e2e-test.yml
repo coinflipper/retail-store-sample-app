@@ -24,6 +24,9 @@ jobs:
         run: |
           yarn nx compose:up ui
           sleep 60
+          # CLEANUP AFTER STARTING CONTAINERS
+          docker builder prune -f
+          docker image prune -f
       - name: Test
         shell: devenv shell bash -- -e {0}
         run: |
