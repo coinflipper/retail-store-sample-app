@@ -59,7 +59,7 @@ jobs:
         run: |
           DB_PASSWORD='test123' yarn nx compose:down
 
-kubernetes:
+  kubernetes:
     name: Kubernetes E2E Tests
     runs-on: ubuntu-latest
     steps:
