@@ -59,11 +59,24 @@ jobs:
         run: |
           DB_PASSWORD='test123' yarn nx compose:down
 
-  kubernetes:
+kubernetes:
     name: Kubernetes E2E Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # 1. FREE DISK SPACE (Vital for KinD loads)
+      - name: Maximize Build Space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'false' # Keep the images we are about to build!
+
       - name: "Setup Env"
         uses: ./.github/actions/setup-env
 
@@ -75,22 +88,39 @@ jobs:
           yarn nx run-many -t container --projects=tag:service \
             --tags public.ecr.aws/aws-containers/retail-store-sample-{projectName}:e2e --parallel=5
 
+      # 2. PRUNE BEFORE LOAD (Clears build cache layers but keeps the images)
+      - name: Cleanup before KinD
+        run: |
+          docker builder prune -f
+          df -h
+
       - name: Kind cluster
         uses: helm/kind-action@v1.12.0
         with:
           cluster_name: kind
-          version: v0.17.0
+          # Updated to a more recent version for better stability
+          node_image: kindest/node:v1.31.0
+          version: v0.26.0
 
       - name: Load images
         env:
           IMAGE_TAG: e2e
         run: |
-          kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-catalog:$IMAGE_TAG
-          kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-cart:$IMAGE_TAG
-          kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-checkout:$IMAGE_TAG
-          kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-orders:$IMAGE_TAG
-          kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-ui:$IMAGE_TAG
+          # Use an array to iterate to make it cleaner and easier to debug
+          IMAGES=(
+            "catalog"
+            "cart"
+            "checkout"
+            "orders"
+            "ui"
+          )
+          
+          for IMG in "${IMAGES[@]}"; do
+            echo "Loading retail-store-sample-$IMG..."
+            kind load docker-image public.ecr.aws/aws-containers/retail-store-sample-$IMG:$IMAGE_TAG --name kind
+          done
 
+          # Cleanup host images once they are safely inside KinD to free space for Helm
           docker system prune --all --force
 
       - name: Deploy
@@ -99,8 +129,7 @@ jobs:
           IMAGE_TAG: e2e
         run: |
           NODE_PORT=30000 helmfile apply -f src/app/helmfile.yaml --wait --skip-diff-on-install
-
-          kubectl wait --for=condition=Ready pod -l app.kubernetes.io/owner=retail-store-sample --timeout 180s || exit_code=$?
+          kubectl wait --for=condition=Ready pod -l app.kubernetes.io/owner=retail-store-sample --timeout 180s
 
       - name: Test
         shell: devenv shell bash -- -e {0}
