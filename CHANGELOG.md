@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.1](https://github.com/coinflipper/retail-store-sample-app/compare/v1.4.0...v1.4.1) (2026-01-15)
+
+
+### Bug Fixes
+
+* Add Docker cleanup commands in e2e workflow ([e11604a](https://github.com/coinflipper/retail-store-sample-app/commit/e11604a0a39974ac34575ef49f8032d4397eea12))
+* Add Kubernetes E2E Tests to workflow ([51c8406](https://github.com/coinflipper/retail-store-sample-app/commit/51c84068164dfff52355b5d6e4a4fac9dd138fb9))
+* Disable tool-cache in e2e-test workflow ([2e83b3a](https://github.com/coinflipper/retail-store-sample-app/commit/2e83b3a5b3089dd865ee96a6f463bc7523f1a24d))
+* Enhance Kubernetes E2E test workflow ([aa18a10](https://github.com/coinflipper/retail-store-sample-app/commit/aa18a109c485281a37946571aaef97dcdaaea8a7))
+
 ## [1.4.0](https://github.com/coinflipper/retail-store-sample-app/compare/v1.3.0...v1.4.0) (2026-01-14)
 
 
